@@ -27,7 +27,7 @@ jobs:
       - name: Build wheels for nnef
         uses: pypa/cibuildwheel@v2.17.0
         with:
-          package-dir: parser
+          package-dir: nnef
           output-dir: dist/
           config-file: parser/pyproject.toml
 
