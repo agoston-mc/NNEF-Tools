@@ -6,10 +6,8 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
-
-#on: [push]
-
 # TODO: Extract the tag name: github.ref_name
+# added to dist(-{os name})-{ref_name}
 
 jobs:
   build_wheels:

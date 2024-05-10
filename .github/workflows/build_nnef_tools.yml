@@ -1,6 +1,5 @@
 name: Build, test and publish nnef_tools
 
-# TODO: Run this action on new tags:
 on:
   push:
     tags:
