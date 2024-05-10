@@ -41,6 +41,4 @@ readme = { file = ["README.md"] }
 # Skip PyPy wheels
 skip = "pp*"
 
-# TODO ezt nem ertem,
-test-command = "echo {project}, {package} or {wheel}"
-#"python {package}/tests/test.py"
+test-command = "python {package}/tests/test.py"
