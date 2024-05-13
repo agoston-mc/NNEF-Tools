@@ -20,6 +20,7 @@ Building the C++ library
 The C++ library can be compiled with cmake.
 
 Example of build commands under Linux:
+
 ````
 $ cd NNEF-Tools/parser/cpp
 $ mkdir build && cd build
@@ -54,6 +55,7 @@ Building the Python module
 --------------------------
 
 The python folder contains a Python wrapper for the C++ parser code. To build the python module, move into the python folder and run
+
 ```
 cd NNEF-Tools/parser/python
 python setup.py install
