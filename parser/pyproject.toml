@@ -1,5 +1,5 @@
 [project]
-name = "nnef"
+name = "nnef-test"
 version = "0.0.1"
 description = "A package for parsing NNEF files"
 requires-python = ">=3.7"
