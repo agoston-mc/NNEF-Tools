@@ -89,4 +89,4 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.NNEF_SECRET_TESTPYPI }}
-          repository-url: https://test.pypi.org/legacy
+          repository-url: https://test.pypi.org/legacy/
