@@ -1,6 +1,6 @@
 [project]
 name = "nnef-test"
-version = "0.0.1"
+version = "0.0.2"
 description = "A package for parsing NNEF files"
 requires-python = ">=3.7"
 
