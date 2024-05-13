@@ -17,9 +17,9 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-13
+#          - ubuntu-latest
+#          - windows-latest
+#          - macos-13
           - macos-14
 
     steps:
@@ -80,3 +80,8 @@ jobs:
       # Just for testing purposes
       - name: Test
         run: ls -R dist
+
+      - name: publish to testPypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy
