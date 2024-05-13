@@ -5,12 +5,9 @@ name: Build, test and publish nnef_tools
 #    tags:
 #      - 'v[0-9]+.[0-9]+.[0-9]+'
 
-
-
 on:
   workflow_run:
-    workflows:
-      - "Build, test and publish nnef"
+    workflows: ["Build, test and publish nnef"]
     types:
       - completed
 
