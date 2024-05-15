@@ -21,10 +21,10 @@ The C++ library can be compiled with cmake.
 
 Example of build commands under Linux:
 
-    $ cd NNEF-Tools/parser/cpp
-    $ mkdir build && cd build
-    $ cmake ..
-    $ make
+    cd NNEF-Tools/parser/cpp
+    mkdir build && cd build
+    cmake ..
+    make
 
 
 Using the C++ library
