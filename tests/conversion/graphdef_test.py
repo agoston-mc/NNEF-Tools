@@ -19,7 +19,7 @@ import nnef_tools.io.tf.graphdef as graphdef
 import nnef_tools.conversion.tf_to_nnef as tf_to_nnef
 import nnef_tools.conversion.nnef_to_tf as nnef_to_tf
 import nnef_tools.optimization.nnef_optimizer as nnef_opt
-import nnef_tools.optimization.tf_optimizer as tf_opt
+import src.nnef_tools.optimization.tf_optimizer as tf_opt
 import unittest
 import tempfile
 import os
