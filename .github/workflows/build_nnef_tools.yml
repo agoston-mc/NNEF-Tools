@@ -3,17 +3,12 @@ name: Build, test and publish nnef_tools
 on:
   push:
     tags:
-      - 'nnef_tools-v[0-9]+.[0-9]+'
+      - 'nnef_tools-v[0-9]+.[0-9]+.[0-9]+'
 
-#on:
-#  workflow_run:
-#    workflows: ["Build, test and publish nnef"]
-#    types:
-#      - completed
 
 jobs:
   build_nnef_tools:
-    name: Build nnef_tools
+    name: Build and publish nnef_tools
     runs-on: "ubuntu-latest"
 #    permissions:
 #      # IMPORTANT: this permission is mandatory for trusted publishing
