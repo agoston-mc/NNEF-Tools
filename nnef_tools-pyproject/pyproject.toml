@@ -39,3 +39,6 @@ full = ["nnef_tools[tensorflow-lite,onnx,caffe,visualization]"]
 
 [tool.setuptools.dynamic]
 readme = { file = ["src/README.md"], content-type = "text/markdown" }
+
+[tool.setuptools]
+package-dir = {"nnef_tools" = "nnef_tools"}
