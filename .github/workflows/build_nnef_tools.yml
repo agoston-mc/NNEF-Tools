@@ -10,9 +10,9 @@ jobs:
   build_nnef_tools:
     name: Build and publish nnef_tools
     runs-on: "ubuntu-latest"
-#    permissions:
-#      # IMPORTANT: this permission is mandatory for trusted publishing
-#      id-token: write
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -43,6 +43,6 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
-#          repository-url: https://test.pypi.org/legacy/
+#          user: __token__
+#          password: ${{ secrets.PYPI_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
