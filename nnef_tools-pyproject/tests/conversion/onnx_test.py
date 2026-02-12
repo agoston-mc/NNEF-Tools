@@ -33,6 +33,9 @@ UNITTEST_FOLDER = os.environ.get('UNITTEST_FOLDER')
 
 class TestEnv(unittest.TestCase):
 
+    DEFAULT_OPSET_VERSION = 11
+    DEFAULT_IR_VERSION = 6
+
     _type_to_numpy = {
         "tensor(float)": np.float32,
         "tensor(double)": np.float64,
@@ -131,7 +134,8 @@ class TestEnv(unittest.TestCase):
         with open(filename, 'wb') as file:
             file.write(model_def.SerializeToString())
 
-    def _test_conversion(self, name, nodes, inputs, outputs, constants=None, values=None, opset_version=11, ir_version=6, epsilon=1e-5):
+    def _test_conversion(self, name, nodes, inputs, outputs, constants=None, values=None,
+                         opset_version=DEFAULT_OPSET_VERSION, ir_version=DEFAULT_IR_VERSION, epsilon=1e-5):
         filename = tempfile.mktemp() if self._output_folder is None else TestEnv._output_folder + name + '.onnx'
         model_def = self._create_model('G', nodes, inputs, outputs, constants or [], values or {}, opset_version, ir_version)
         self._save_model(model_def, filename)
@@ -152,7 +156,8 @@ class TestEnv(unittest.TestCase):
                 diff = np.max(np.abs(original - converted))
                 self.assertLess(diff, epsilon)
 
-    def _test_unary(self, op_type, dtype=TensorProto.FLOAT):
+    def _test_unary(self, op_type, dtype=TensorProto.FLOAT,
+                    opset_version=DEFAULT_OPSET_VERSION, ir_version=DEFAULT_IR_VERSION):
         input = helper.make_tensor_value_info('input', dtype, [1, 3, 32, 32])
         output = helper.make_tensor_value_info('output', dtype, [1, 3, 32, 32])
         node = helper.make_node(
@@ -161,9 +166,11 @@ class TestEnv(unittest.TestCase):
             outputs=['output'],
         )
 
-        self._test_conversion(op_type.lower(), [node], [input], [output])
+        self._test_conversion(op_type.lower(), [node], [input], [output],
+                              opset_version=opset_version, ir_version=ir_version)
 
-    def _test_binary(self, op_type, input_dtype=TensorProto.FLOAT, output_dtype=TensorProto.FLOAT):
+    def _test_binary(self, op_type, input_dtype=TensorProto.FLOAT, output_dtype=TensorProto.FLOAT,
+                     opset_version=DEFAULT_OPSET_VERSION, ir_version=DEFAULT_IR_VERSION):
         input1 = helper.make_tensor_value_info('input1', input_dtype, [1, 3, 32, 32])
         input2 = helper.make_tensor_value_info('input2', input_dtype, [1, 3, 32, 32])
         output = helper.make_tensor_value_info('output', output_dtype, [1, 3, 32, 32])
@@ -173,9 +180,11 @@ class TestEnv(unittest.TestCase):
             outputs=['output'],
         )
 
-        self._test_conversion(op_type.lower(), [node], [input1, input2], [output])
+        self._test_conversion(op_type.lower(), [node], [input1, input2], [output],
+                              opset_version=opset_version, ir_version=ir_version)
 
-    def _test_reduce(self, op_type, keepdims, dtype=TensorProto.FLOAT, p=None):
+    def _test_reduce(self, op_type, keepdims, dtype=TensorProto.FLOAT, p=None,
+                     opset_version=DEFAULT_OPSET_VERSION, ir_version=DEFAULT_IR_VERSION):
         input = helper.make_tensor_value_info('input', dtype, [1, 16, 32, 32])
         output = helper.make_tensor_value_info('output', dtype, [1, 1, 32, 32] if keepdims else [1, 32, 32])
         node = helper.make_node(
@@ -186,7 +195,8 @@ class TestEnv(unittest.TestCase):
             keepdims=keepdims,
         )
 
-        self._test_conversion(op_type.lower(), [node], [input], [output])
+        self._test_conversion(op_type.lower(), [node], [input], [output],
+                              opset_version=opset_version, ir_version=ir_version)
 
 
 class TestCases(TestEnv):
@@ -991,6 +1001,43 @@ class TestCases(TestEnv):
         )
 
         self._test_conversion('lstm', [node], [X, h0, c0], [hn, cn], constants=[W, R, B])
+
+    def test_depth_to_space(self):
+        input = helper.make_tensor_value_info('input', TensorProto.FLOAT, [4, 64, 32, 32])
+        output = helper.make_tensor_value_info('output', TensorProto.FLOAT, [4, 4, 128, 128])
+        node = helper.make_node(
+            op_type='DepthToSpace',
+            inputs=['input'],
+            outputs=['output'],
+            blocksize=4,
+        )
+
+        self._test_conversion('depth_to_space', [node], [input], [output])
+
+    def test_depth_to_space_CRD(self):
+        input = helper.make_tensor_value_info('input', TensorProto.FLOAT, [4, 64, 32, 32])
+        output = helper.make_tensor_value_info('output', TensorProto.FLOAT, [4, 4, 128, 128])
+        node = helper.make_node(
+            op_type='DepthToSpace',
+            inputs=['input'],
+            outputs=['output'],
+            blocksize=4,
+            mode="CRD"
+        )
+
+        self._test_conversion('depth_to_space_crd', [node], [input], [output])
+
+    def test_space_to_depth(self):
+        input = helper.make_tensor_value_info('input', TensorProto.FLOAT, [4, 4, 128, 128])
+        output = helper.make_tensor_value_info('output', TensorProto.FLOAT, [4, 64, 32, 32])
+        node = helper.make_node(
+            op_type='SpaceToDepth',
+            inputs=['input'],
+            outputs=['output'],
+            blocksize=4,
+        )
+
+        self._test_conversion('space_to_depth', [node], [input], [output])
 
     def test_min_recude(self):
         self._test_reduce('ReduceMin', keepdims=False)

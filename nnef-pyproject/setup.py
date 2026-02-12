@@ -21,11 +21,10 @@ setup(
     ext_modules=[
         Extension(
             "_nnef",
-            sources=["nnef/nnef.cpp"],
+            sources=["nnef/nnef.cpp", "nnef/cpp/src/nnef.cpp"],
             include_dirs=["nnef/cpp/include", numpy.get_include()],
             language="c++",
             extra_compile_args=["-std=c++11"] if os_name != "nt" else [],
-            define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
         )
     ],
 )

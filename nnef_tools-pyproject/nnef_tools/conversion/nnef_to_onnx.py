@@ -28,7 +28,12 @@ class Converter(_Converter):
             'lp_pool': pool_shape,
             'lp_reduce': reduce_shape,
             'mean_variance_normalization': lambda input, scale, offset, **kwargs: input,
+            'lstm_step': lambda x, h, c, W, R, B: (h, c),
+            'lstm_loop': lambda X, W, R, B, h, c, **kwargs: (h, c),
             'erf': lambda x: x,
+            'mish': lambda x: x,
+            'depth_to_space': lambda x, block_size, **kwargs: [x[0], x[1] // block_size ** 2, x[2] * block_size, x[3] * block_size],
+            'space_to_depth': lambda x, block_size, **kwargs: [x[0], x[1] * block_size ** 2, x[2] // block_size, x[3] // block_size],
         }
 
     @staticmethod
@@ -221,11 +226,11 @@ _Transforms = Converter.unpack_transforms({
                 'spatial': '!0 if I[1].rank == I[0].rank else None',
             }
         ),
-    ('relu', 'sigmoid', 'tanh', 'softplus', 'selu', 'not', 'copy', 'elu', 'erf', 'abs', 'sign',
+    ('relu', 'sigmoid', 'tanh', 'softplus', 'selu', 'not', 'copy', 'elu', 'erf', 'mish', 'abs', 'sign',
      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh',
      'exp', 'log', 'neg', 'sqrt', 'ceil', 'floor', 'round'):
         Transform(
-            type=('Relu', 'Sigmoid', 'Tanh', 'Softplus', 'Selu', 'Not', 'Identity', 'Elu', 'Erf', 'Abs', 'Sign',
+            type=('Relu', 'Sigmoid', 'Tanh', 'Softplus', 'Selu', 'Not', 'Identity', 'Elu', 'Erf', 'Mish', 'Abs', 'Sign',
                   'Sin', 'Cos', 'Tan', 'Asin', 'Acos', 'Atan', 'Sinh', 'Cosh', 'Tanh', 'Asinh', 'Acosh', 'Atanh',
                   'Exp', 'Log', 'Neg', 'Sqrt', 'Ceil', 'Floor', 'Round'),
             inputs='!I[0]',
@@ -528,5 +533,24 @@ _Transforms = Converter.unpack_transforms({
             attribs={
                 'to': '!O[0].dtype',
             }
+        ),
+    'depth_to_space':
+        Transform(
+            type="DepthToSpace",
+            inputs='!I[0]',
+            outputs='!O[0]',
+            attribs={
+                'blocksize': '!block_size',
+                'mode': '!"DCR" if blocks_first else "CRD"',
+            },
+        ),
+    'space_to_depth':
+        Transform(
+            type="SpaceToDepth",
+            inputs='!I[0]',
+            outputs='!O[0]',
+            attribs={
+                'blocksize': '!block_size',
+            },
         ),
 })
