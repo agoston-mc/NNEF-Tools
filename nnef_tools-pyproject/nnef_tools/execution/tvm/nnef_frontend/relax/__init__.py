@@ -15,4 +15,13 @@
 """
 NNEF frontend for converting graphs into Relax IRModels.
 """
+
+import tvm
+from packaging import version
+
+ver = version.parse(tvm.__version__)
+if ver.minor < 20:
+    raise ImportError(f"TVM version 0.20 or higher is required, but found {tvm.__version__}")
+
+
 from .nnef_frontend import from_nnef

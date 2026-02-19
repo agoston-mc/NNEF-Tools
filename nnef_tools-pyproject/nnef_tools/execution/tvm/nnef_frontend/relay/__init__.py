@@ -12,4 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
+import tvm
+from packaging import version
+
+ver = version.parse(tvm.__version__)
+if ver.minor > 19:
+    raise ImportError(f"TVM version 0.19 or lower is required, but found {tvm.__version__}")
+
+if ver.minor != 19:
+    warnings.warn(f"TVM version 0.19 is recommended, but found {tvm.__version__}. Some features may not work as expected.")
+
 from .from_nnef import from_nnef

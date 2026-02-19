@@ -700,10 +700,7 @@ def sqr_converter(bbuilder, data, **kwargs):
     if kwargs:
         __unexpected_attrs("sqr", kwargs)
 
-    if isinstance(data, relax.Call):
-        d_type = data.checked_type.dtype
-    else:
-        d_type = data.struct_info.dtype
+    d_type = data.struct_info.dtype
 
     return pow_converter(bbuilder, data, tvm_expr.const(2.0, dtype=d_type))
 
@@ -936,10 +933,7 @@ def box_converter(bbuilder, data, size, border, padding, stride, dilation, norma
 
     dshape = [v.value for v in data.struct_info.shape.values]
 
-    if isinstance(data, relax.Call):
-        d_type = data.checked_type.dtype
-    else:
-        d_type = data.struct_info.dtype
+    d_type = data.struct_info.dtype
 
     if size[:2] == [1, 1]:
         size[0] = dshape[1]
@@ -1420,7 +1414,7 @@ def pad_converter(bbuilder, data, padding, border, value, **kwargs):
         )
 
     # constant works with normal relax.nn.pad
-    return relax.op.nn.pad(data, pad, value, border)
+    return relax.op.nn.pad(data, pad, border, value)
 
 
 def tile_converter(bbuilder, data, repeats, **kwargs):
@@ -1744,7 +1738,7 @@ def max_pool_converter(bbuilder, data, size, border, padding, stride, dilation, 
 
     if border == "constant":
         padding = [(0, 0), (0, 0)] + padding
-        data = pad_converter(bbuilder, data, padding, border, tvm_expr.const(0.0))
+        data = pad_converter(bbuilder, data, padding, border, 0.0)
         data = bbuilder.normalize(data)
         pad = (0, 0)
 
