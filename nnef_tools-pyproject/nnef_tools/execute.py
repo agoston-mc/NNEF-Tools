@@ -428,7 +428,12 @@ class SkriptNDExecutor(Executor):
     def __call__(self, inputs, output_names=None, collect_statistics=False):
         inputs = [inputs[tensor.name] for tensor in self.input_info()]
         outputs = self.runner(*inputs)
-        return {tensor.name: output for tensor, output in zip(self.output_info(), outputs)}, None
+
+        stats = None
+        if collect_statistics and hasattr(self.runner, 'tensors'):
+            stats = {name: compute_statistics(value) for name, value in self.runner.tensors().items()}
+
+        return {tensor.name: output for tensor, output in zip(self.output_info(), outputs)}, stats
 
 
 def get_executor(format, model_path, require_intermediates, custom_operators, decomposed, atomic, target, device):

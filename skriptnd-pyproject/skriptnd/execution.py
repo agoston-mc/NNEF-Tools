@@ -52,6 +52,11 @@ struct {name}_model
         return {variables};
     }}
     
+    std::map<const char*,sknd::rt::TensorRef> tensors()
+    {{
+        return {all_tensors};
+    }}
+
     {checks}
     
     {blocks}
@@ -86,7 +91,11 @@ py::object make_namedtuple( const std::string& name, std::initializer_list<std::
     return namedtuple(py::str(name), items);
 }
 
-py::object TensorInfo = make_namedtuple("TensorInfo", { "shape", "dtype" });
+py::object get_TensorInfo()
+{
+    static py::object TensorInfo = make_namedtuple("TensorInfo", { "shape", "dtype" });
+    return TensorInfo;
+}
 
 
 py::dtype py_dtype( sknd::rt::Dtype dtype )
@@ -113,7 +122,13 @@ void fill_tensor( sknd::rt::TensorView& tensor, const py::array& array )
         throw std::invalid_argument("unexpected dtype '" + str(array.dtype()) + "'; expected dtype '" + str(dtype) + "'");
     }
     
-    tensor.reshape(array.ndim(), array.shape());
+    std::vector<long> shape(array.ndim());
+    for ( py::ssize_t i = 0; i < array.ndim(); ++i )
+    {
+        shape[i] = (long)array.shape()[i];
+    }
+    
+    tensor.reshape(array.ndim(), shape.data());
     
     std::copy_n((char*)array.data(), array.nbytes(), tensor.bytes());
 }
@@ -173,7 +188,7 @@ py::tuple execute( MODEL_TYPE& model, py::args args )
             auto& items = *input.as<sknd::rt::TensorPackView*>();
             auto& arg = (const py::list&)args[i];
             
-            items.resize(arg.size());
+            items.resize((int)arg.size());
             for ( int k = 0; k < items.size(); ++k )
             {
                 fill_tensor(items[k], (const py::array&)arg[k]);
@@ -238,14 +253,14 @@ py::tuple tensor_info( const std::vector<sknd::rt::TensorRef>& views )
             py::list items(pack.size());
             for ( int k = 0; k < pack.size(); ++k )
             {
-                items[k] = TensorInfo(make_shape(pack[i].rank(), pack[i].shape()), py_dtype(pack[i].dtype()));
+                items[k] = get_TensorInfo()(make_shape(pack[k].rank(), pack[k].shape()), py_dtype(pack[k].dtype()));
             }
             infos[i] = items;
         }
         else
         {
             auto& item = *view.as<sknd::rt::TensorView*>();
-            infos[i] = TensorInfo(make_shape(item.rank(), item.shape()), py_dtype(item.dtype()));
+            infos[i] = get_TensorInfo()(make_shape(item.rank(), item.shape()), py_dtype(item.dtype()));
         }
     }
     return infos;
@@ -262,12 +277,38 @@ py::tuple output_info( MODEL_TYPE& model )
 }
 
 
+py::dict get_tensors( MODEL_TYPE& model )
+{
+    py::dict results;
+    for ( auto& [name, value] : model.tensors() )
+    {
+        if ( value.is<sknd::rt::TensorPackView*>() )
+        {
+            auto& items = *value.as<sknd::rt::TensorPackView*>();
+            auto result = py::list(items.size());
+            for ( int k = 0; k < items.size(); ++k )
+            {
+                result[k] = fetch_tensor(items[k]);
+            }
+            results[py::str(name)] = result;
+        }
+        else
+        {
+            auto& item = *value.as<sknd::rt::TensorView*>();
+            results[py::str(name)] = fetch_tensor(item);
+        }
+    }
+    return results;
+}
+
+
 PYBIND11_MODULE(MODULE_NAME, m) {
     py::class_<MODEL_TYPE>(m, "Model")
         .def(py::init())
         .def("load", &load)
         .def("input_info", &input_info)
         .def("output_info", &output_info)
+        .def("tensors", &get_tensors)
         .def("__call__", &execute);
 }
 """
@@ -1089,6 +1130,8 @@ def _format_variable_views(tensors):
     return "\n".join(f"\t\t\t{{ \"{tensor.name}\", &{_valid_id(tensor.name)} }},"
                      for tensor in tensors if isinstance(tensor.value, np.ndarray))
 
+def _format_all_tensor_views(tensors):
+    return "\n".join(f"\t\t\t{{ \"{tensor.name}\", &{_valid_id(tensor.name)} }}," for tensor in tensors)
 
 def _wrap_brackets(text, inner=False):
     if len(text) == 0:
@@ -1123,7 +1166,8 @@ def _generate_model_source(model):
                                 blocks=_format_blocks_code(model.graphs, indent='\t\t', context=context),
                                 inputs=_wrap_brackets(_format_tensor_views(inputs), inner=True),
                                 outputs=_wrap_brackets(_format_tensor_views(outputs), inner=True),
-                                variables=_wrap_brackets(_format_variable_views(model.variables), inner=True))
+                                variables=_wrap_brackets(_format_variable_views(model.variables), inner=True),
+                                all_tensors=_wrap_brackets(_format_all_tensor_views(model.tensors), inner=True))
 
 
 def _save_to_file(text, filename):
@@ -1184,7 +1228,7 @@ def compile_model(model, keep_generated_code=False):
         zip_safe=False,
         python_requires=">=3.6",
         script_name='setup.py',
-        script_args=['--quiet', 'develop'],
+        script_args=['--quiet', 'build_ext', '--inplace'],
         include_dirs=["skriptnd/cpp/include", "skriptnd/cpp/include/core",
                       "skriptnd/cpp/include/frontend", "skriptnd/cpp/include/composer", "skriptnd/cpp/include/runtime"],
     )
@@ -1200,7 +1244,7 @@ def compile_model(model, keep_generated_code=False):
     import site
     importlib.reload(site)
     module = importlib.import_module(module_name, package=".")
-    os.remove(module.__file__)
+    #os.remove(module.__file__)
 
     compiled_model = module.Model()
     compiled_model.load({tensor.name: _normalize_dtype(tensor.value) for tensor in model.variables})
