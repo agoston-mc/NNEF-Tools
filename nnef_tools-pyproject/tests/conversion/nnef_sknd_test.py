@@ -1210,6 +1210,18 @@ class TestCases(TestEnv):
 
         self._test_conversion('zero_point_linear_quant', code, input_range=(0.0, 1.0))
 
+    def test_constant(self):
+        code = """
+           graph G(input) -> (output)
+           {
+               input = external<scalar>(shape = [1, 16, 32, 32]);
+               const = constant<scalar>(shape = [1, 16, 32, 32], value = [42.0]);
+               output = copy(const);
+           }
+           """
+
+        self._test_conversion('constant', code)
+
 
 @unittest.skipIf(TestEnv._network_folder is None or not os.path.isdir(TestEnv._network_folder),
                  "no network test folder provided")

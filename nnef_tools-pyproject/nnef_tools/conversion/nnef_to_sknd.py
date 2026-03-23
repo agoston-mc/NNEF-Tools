@@ -26,6 +26,7 @@ class Converter(_Converter):
                             functions=custom_functions, mirror_unsupported=mirror_unsupported)
 
     def __call__(self, model):
+        self.fill_data_in_constants(model)
         model = _Converter.__call__(self, model)
         generate_missing_constant_and_variable_names(model)
         return model
@@ -46,6 +47,18 @@ class Converter(_Converter):
 
         return types.from_numpy(value, type=type, flat=flat) if isinstance(value, np.ndarray) else \
             types.cast(value, type=type) if type is not None else value
+
+    @staticmethod
+    def fill_data_in_constants(model):
+        for graph in model.graphs:
+            for op in graph.operations:
+                if op.type == 'constant':
+                    value = op.attribs['value']
+                    if isinstance(value, list) and len(value) == 1:
+                        value = value[0]
+                    if isinstance(value, np.ndarray) and value.size == 1:
+                        value = value.item()
+                    op.output.set_data(value, variable=False)
 
     def convert_padding(self, padding):
         return [p for p, q in padding] + [q for p, q in padding] if len(padding) != 0 else None
