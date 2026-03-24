@@ -829,6 +829,19 @@ class TestCases(TestEnv):
 
         self._test_conversion('clip', [node], [input], [output], constants=[min, max], values={'min': 0.25, 'max': 0.75})
 
+    def test_clip_nomin(self):
+        input = helper.make_tensor_value_info('input', TensorProto.FLOAT, [1, 3, 32, 32])
+        min = helper.make_tensor_value_info('min', TensorProto.FLOAT, [])
+        max = helper.make_tensor_value_info('max', TensorProto.FLOAT, [])
+        output = helper.make_tensor_value_info('output', TensorProto.FLOAT, [1, 3, 32, 32])
+        node = helper.make_node(
+            op_type='Clip',
+            inputs=['input', '', 'max'],
+            outputs=['output'],
+        )
+
+        self._test_conversion('clip_nomin', [node], [input], [output], constants=[min, max], values={'min': 0.25, 'max': 0.75})
+
     def test_argmin(self):
         input = helper.make_tensor_value_info('input', TensorProto.FLOAT, [1, 16, 32, 32])
         output = helper.make_tensor_value_info('output', TensorProto.INT64, [1, 1, 32, 32])

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from __future__ import division, print_function, absolute_import
-from .converter import ConverterToSkriptND as _Converter, Transform, ConversionError
+from .converter import ConverterToSkriptND as _Converter, Transform, ConversionError, ShapeExpr
 from ..model.utils import generate_missing_constant_and_variable_names
 from ..utils import types
 import numpy as np
@@ -26,6 +26,7 @@ class Converter(_Converter):
                             functions=custom_functions, mirror_unsupported=mirror_unsupported)
 
     def __call__(self, model):
+        self.fill_data_in_constants(model)
         model = _Converter.__call__(self, model)
         generate_missing_constant_and_variable_names(model)
         return model
@@ -46,6 +47,18 @@ class Converter(_Converter):
 
         return types.from_numpy(value, type=type, flat=flat) if isinstance(value, np.ndarray) else \
             types.cast(value, type=type) if type is not None else value
+
+    @staticmethod
+    def fill_data_in_constants(model):
+        for graph in model.graphs:
+            for op in graph.operations:
+                if op.type == 'constant':
+                    value = op.attribs['value']
+                    if isinstance(value, list) and len(value) == 1:
+                        value = value[0]
+                    if isinstance(value, np.ndarray) and value.size == 1:
+                        value = value.item()
+                    op.output.set_data(value, variable=False)
 
     def convert_padding(self, padding):
         return [p for p, q in padding] + [q for p, q in padding] if len(padding) != 0 else None
@@ -71,6 +84,31 @@ class Converter(_Converter):
 
     def norm_size(self, size):
         return [s for s in size if s != 1]
+
+    def coordinate_transform(self, coordinate_transformation_mode):
+        return 'SYMMETRIC' if coordinate_transformation_mode == 'half_pixel' or \
+                            coordinate_transformation_mode == 'pytorch_half_pixel' else \
+               'ASYMMETRIC' if coordinate_transformation_mode == 'asymmetric' else \
+               'ALIGNED' if coordinate_transformation_mode == 'align_corners' else None
+
+    def handle_negative_slice_bounds(self, value, tensor, axes):
+        if axes is None:
+            axes = list(range(len(value)))
+        if isinstance(value, list):
+            return [self._shift_negative_by_shape(tensor, axis, item) if item < 0 else item
+                    for axis, item in zip(axes, value)]
+        else:
+            return value
+
+    def _make_shape_access(self, tensor, axis):
+        shape = ShapeExpr(ShapeExpr.Op.Shape, args=[tensor])
+        axis = ShapeExpr(ShapeExpr.Op.Const, args=[axis])
+        return ShapeExpr(ShapeExpr.Op.Subscript, args=[shape, axis])
+
+    def _shift_negative_by_shape(self, tensor, axis, value):
+        shape = self._make_shape_access(tensor, axis)
+        value = ShapeExpr(ShapeExpr.Op.Const, args=[-value])
+        return ShapeExpr(ShapeExpr.Op.Sub, args=[shape, value])
 
 
 _Transforms = Converter.unpack_transforms({
@@ -407,8 +445,8 @@ _Transforms = Converter.unpack_transforms({
             outputs='!O[0]',
             attribs={
                 'axes': '!axes',
-                'begin': '!begin',
-                'end': '!end',
+                'begin': '!handle_negative_slice_bounds(begin, I[0], axes)',
+                'end': '!handle_negative_slice_bounds(end, I[0], axes)',
                 'stride': '!stride',
             },
         ),

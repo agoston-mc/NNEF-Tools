@@ -882,11 +882,15 @@ _Transforms = Converter.unpack_transforms({
         ),
     'Clip':
         Transform(
-            type='!"math.max" if I[2].name == "" else "math.min" if I[1].name == "" else "math.clamp"',
+            type='math.clamp',
+            defaults={
+                'max': 3.402823e+38,
+                'min': -3.402823e+38,
+            },
             inputs=(
                 '!I[0]',
-                '!I[1] if I[1].name != "" else None',
-                '!I[2] if I[2].name != "" else None',
+                '!I[1] if len(I) > 1 and I[1].name != "" else as_tensor(min, I[0].dtype)',
+                '!I[2] if len(I) > 1 and I[2].name != "" else as_tensor(max, I[0].dtype)',
             ),
             outputs='!O[0]',
         ),
