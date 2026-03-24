@@ -1223,7 +1223,7 @@ def compile_model(model, keep_generated_code=False, tmp_dir_path="."):
         os.chdir(cwd)
 
     compiled_model = module.Model()
-    compiled_model.load({tensor.name: tensor.value for tensor in model.variables})
+    compiled_model.load({tensor.name: _normalize_dtype(tensor.value) for tensor in model.variables})
     return compiled_model
 
 import sys
